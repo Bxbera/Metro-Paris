@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.javadocmd.simplelatlng.LatLng;
 
@@ -67,6 +68,65 @@ public class MetroDAO {
 		}
 
 		return linee;
+	}
+
+	public boolean isConnesse(Fermata partenza, Fermata arrivo) {
+		String sql = "SELECT COUNT(*) AS c "
+				+ "FROM connessione "
+				+ "WHERE id_stazP = ? AND id_stazA = ?";
+		
+		try {
+			Connection conn = DBConnect.getConnection();
+			
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, partenza.getIdFermata());
+			st.setInt(2, arrivo.getIdFermata());
+			
+			ResultSet res = st.executeQuery();
+			
+			res.first();
+			
+			int c = res.getInt("c");
+		
+			conn.close();
+			
+			return c != 0;
+			
+		} catch(SQLException e) {
+			e.printStackTrace();
+			return false;
+		}
+		
+	}
+
+	public List<Fermata> trovaCollegate(Fermata partenza, Map<Integer, Fermata> fermateIdMap) {
+		String sql = "SELECT id_stazA "
+				+ "FROM connessione "
+				+ "WHERE id_stazP = ? ";
+		
+		Connection conn = DBConnect.getConnection();
+		List<Fermata> ret = new ArrayList<>();
+		
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			st.setInt(1, partenza.getIdFermata());
+			
+			ResultSet res = st.executeQuery();
+			
+			while(res.next()) {
+				int id_stazA = res.getInt("id_stazA");
+				ret.add(fermateIdMap.get(id_stazA));
+			}
+			
+			conn.close();
+			
+			return ret;
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+			return null;
+		}
+		
 	}
 
 	
