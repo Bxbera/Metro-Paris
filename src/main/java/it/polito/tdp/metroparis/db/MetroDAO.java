@@ -11,6 +11,7 @@ import java.util.Map;
 import com.javadocmd.simplelatlng.LatLng;
 
 import it.polito.tdp.metroparis.model.Connessione;
+import it.polito.tdp.metroparis.model.CoppieF;
 import it.polito.tdp.metroparis.model.Fermata;
 import it.polito.tdp.metroparis.model.Linea;
 
@@ -102,7 +103,8 @@ public class MetroDAO {
 	public List<Fermata> trovaCollegate(Fermata partenza, Map<Integer, Fermata> fermateIdMap) {
 		String sql = "SELECT id_stazA "
 				+ "FROM connessione "
-				+ "WHERE id_stazP = ? ";
+				+ "WHERE id_stazP = ? "
+				+ "GROUP BY id_stazA";
 		
 		Connection conn = DBConnect.getConnection();
 		List<Fermata> ret = new ArrayList<>();
@@ -128,7 +130,51 @@ public class MetroDAO {
 		}
 		
 	}
+	
+	/*
+	 *  L'esercitatore invece ha usato l'altro modo di trovare i collegati, lasciando fare al db, quindi, creando una
+	 *  query più complessa e poi creando nuove fermate partendo dal risultato della query; secondo me è meglio l'implementazione con IdMap,
+	 *  cosa che poi implementa successivamente
+	 *  SELECT * 
+		FROM fermata
+		WHERE id_fermata IN 
+		(SELECT id_stazA
+		FROM connessione
+		WHERE id_stazP = 123
+		GROUP BY id_stazA)
+		ORDER BY nome asc
+		
+		il group by nella query annidata mi è servito per evitare duplicati 
+	 * */
 
+	
+	public List<CoppieF> getAllCoppie (Map<Integer, Fermata> fermateIdMap){
+		String sql = "SELECT distinct id_stazP, id_stazA "
+				+ "FROM connessione";
+		
+		List<CoppieF> allCoppie = new ArrayList<>();
+		Connection conn = DBConnect.getConnection();
+		
+		try {
+			PreparedStatement st = conn.prepareStatement(sql);
+			
+			ResultSet res = st.executeQuery();
+			
+			while(res.next()) {
+				CoppieF coppia = new CoppieF(fermateIdMap.get(res.getInt("id_stazP")), 
+						fermateIdMap.get(res.getInt("id_stazA")));
+				allCoppie.add(coppia);
+			}
+			st.close();
+			conn.close();
+			
+			return allCoppie;
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+			return null;
+		}
+	}
 	
 
 }
